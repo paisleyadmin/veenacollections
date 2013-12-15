@@ -11286,41 +11286,6 @@
             The implementation assumes that the model has a single container mapping.
             </summary>
         </member>
-        <member name="M:System.Data.Entity.Infrastructure.MappingViews.DefaultDbMappingViewCacheFactory.#ctor(System.Data.Entity.Infrastructure.MappingViews.DbMappingViewCacheTypeAttribute)">
-            <summary>
-            Creates a new DefaultDbMappingViewCacheFactory instance.
-            </summary>
-            <param name="attribute">
-            A DbMappingViewCacheTypeAttribute
-            that specifies the cache type.
-            </param>
-        </member>
-        <member name="M:System.Data.Entity.Infrastructure.MappingViews.DefaultDbMappingViewCacheFactory.Create(System.String,System.String)">
-            <summary>
-            Creates a generated view cache instance for the single container mapping in the model
-            by instantiating the type specified by the associated DbMappingViewCacheTypeAttribute.
-            </summary>
-            <param name="conceptualModelContainerName">The name of a container in the conceptual model.</param>
-            <param name="storeModelContainerName">The name of a container in the store model.</param>
-            <returns>A DbMappingViewCache that specifies the generated view cache.</returns>
-        </member>
-        <member name="M:System.Data.Entity.Infrastructure.MappingViews.DefaultDbMappingViewCacheFactory.GetHashCode">
-            <summary>
-            Specifies a hash function for the current type. Two different instances associated
-            with the same DbMappingViewCacheTypeAttribute have the same hash code.
-            </summary>
-            <returns>A hash code for the current object.</returns>
-        </member>
-        <member name="M:System.Data.Entity.Infrastructure.MappingViews.DefaultDbMappingViewCacheFactory.Equals(System.Object)">
-            <summary>
-            Determines whether the specified object is equal to the current object.
-            </summary>
-            <param name="obj">An object to compare with the current object.</param>
-            <returns>
-            true if the specified object is an instance of DefaultDbMappingViewCacheFactory
-            and the associated DbMappingViewCacheTypeAttribute is the same, false otherwise.
-            </returns>
-        </member>
         <member name="T:System.Data.Entity.Migrations.Builders.ParameterBuilder">
              <summary>
              Helper class that is used to configure a parameter.
@@ -13666,11 +13631,6 @@
             <param name="condition"> Condition </param>
             <param name="implies"> Entailed expression </param>
         </member>
-        <member name="P:System.Data.Entity.Core.Mapping.ViewGeneration.QueryRewriting.FragmentQueryKBChaseSupport.Residue">
-            <summary>
-            Returns KB rules which cannot be used for chasing.
-            </summary>
-        </member>
         <member name="T:System.Data.Entity.Core.Common.Utils.Boolean.BasicVisitor`1">
             <summary>
             Basic visitor which reproduces the given expression tree.
@@ -15080,6 +15040,13 @@
             <summary>
             Options for query execution.
             </summary>
+        </member>
+        <member name="M:System.Data.Entity.Core.Objects.ExecutionOptions.#ctor(System.Data.Entity.Core.Objects.MergeOption)">
+            <summary>
+            Creates a new instance of <see cref="T:System.Data.Entity.Core.Objects.ExecutionOptions"/>.
+            </summary>
+            <param name="mergeOption"> Merge option to use for entity results. </param>
+            <param name="streaming"> Whether the query is streaming or buffering. </param>
         </member>
         <member name="M:System.Data.Entity.Core.Objects.ExecutionOptions.#ctor(System.Data.Entity.Core.Objects.MergeOption,System.Boolean)">
             <summary>
@@ -40348,7 +40315,7 @@
             The data structures for this collection, which contains a list and a dictionary
             </summary>
         </member>
-        <member name="F:System.Data.Entity.Core.Metadata.Edm.MetadataCollection`1.CollectionData.IdentityDictionary">
+        <member name="F:System.Data.Entity.Core.Metadata.Edm.MetadataCollection`1.CollectionData._identityDictionary">
             <summary>
             The IdentityDictionary is a case-insensitive dictionary
             used after a certain # of elements have been added to the OrderedList.
@@ -52283,6 +52250,12 @@
                 cref="T:System.Data.Entity.Core.Objects.ObjectContext" />
             .
             </returns>
+        </member>
+        <member name="P:System.Data.Entity.Core.Objects.ObjectContext.ContextOwnsConnection">
+            <summary>
+            ContextOwnsConnection sets whether this context should dispose
+            its underlying EntityConnection.
+            </summary>
         </member>
         <member name="P:System.Data.Entity.Core.Objects.ObjectContext.Perspective">
             <summary>
@@ -73495,6 +73468,22 @@
             <param name="providerManifestToken">The provider manifest token.</param>
             <returns>The SQL body for the stored procedure.</returns>
         </member>
+        <member name="M:System.Data.Entity.Migrations.Sql.MigrationSqlGenerator.BuildStoreTypeUsage(System.String,System.Data.Entity.Migrations.Model.PropertyModel)">
+            <summary>
+            Builds the store type usage for the specified <paramref name="storeTypeName"/> using the facets from the specified <paramref name="propertyModel"/>.
+            </summary>
+            <param name="storeTypeName">Name of the store type.</param>
+            <param name="propertyModel">The target propertyModel.</param>
+            <returns>A store-specific TypeUsage</returns>
+        </member>
+        <member name="P:System.Data.Entity.Migrations.Sql.MigrationSqlGenerator.ProviderManifest">
+            <summary>
+            Gets or sets the provider manifest.
+            </summary>
+            <value>
+            The provider manifest.
+            </value>
+        </member>
         <member name="T:System.Data.Entity.Migrations.Sql.MigrationStatement">
              <summary>
              Represents a migration operation that has been translated into a SQL statement.
@@ -81705,12 +81694,12 @@
         <!-- Badly formed XML comment ignored for member "M:System.Data.Entity.Resources.Strings.LightweightEntityConfiguration_InvalidNavigationProperty(System.Object)" -->
         <member name="M:System.Data.Entity.Resources.Strings.LightweightEntityConfiguration_InvalidInverseNavigationProperty(System.Object,System.Object,System.Object,System.Object)">
             <summary>
-            A string like "The entity type '{0}' on which the navigation property '{1}' is declared is not the same as the type '{2}' referred to by the inverse navigation property '{3}'."
+            A string like "The entity type '{0}' on which the navigation property '{1}' is declared is not a base type for the type '{2}' referred to by the inverse navigation property '{3}'."
             </summary>
         </member>
         <member name="M:System.Data.Entity.Resources.Strings.LightweightEntityConfiguration_MismatchedInverseNavigationProperty(System.Object,System.Object,System.Object,System.Object)">
             <summary>
-            A string like "The entity type '{0}' to which the navigation property '{1}' refers is not the same as the type '{2}' on which the inverse navigation property '{3}' is declared."
+            A string like "The entity type '{0}' to which the navigation property '{1}' refers does not derive from the type '{2}' on which the inverse navigation property '{3}' is declared."
             </summary>
         </member>
         <member name="M:System.Data.Entity.Resources.Strings.DuplicateParameterName(System.Object)">
@@ -90713,7 +90702,7 @@
             <typeparam name="TEntity"> The type of entity to get. </typeparam>
             <returns> The entities. </returns>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQuery``1(System.String,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQuery``1(System.String,System.Nullable{System.Boolean},System.Object[])">
             <summary>
             Returns an <see cref="T:System.Collections.Generic.IEnumerator`1"/> which when enumerated will execute the given SQL query against the
             database backing this context. The results are not materialized as entities or tracked.
@@ -90724,7 +90713,7 @@
             <param name="parameters"> The parameters. </param>
             <returns> The query results. </returns>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQuery(System.Type,System.String,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQuery(System.Type,System.String,System.Nullable{System.Boolean},System.Object[])">
             <summary>
             Returns an <see cref="T:System.Collections.IEnumerator"/> which when enumerated will execute the given SQL query against the
             database backing this context. The results are not materialized as entities or tracked.
@@ -90735,7 +90724,7 @@
             <param name="parameters"> The parameters. </param>
             <returns> The query results. </returns>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQueryAsIEnumerator``1(System.String,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalContext.ExecuteSqlQueryAsIEnumerator``1(System.String,System.Nullable{System.Boolean},System.Object[])">
             <summary>
             Calls the generic ExecuteSqlQuery but with a non-generic return type so that it
             has the correct signature to be used with CreateDelegate above.
@@ -92490,7 +92479,7 @@
             or for some other non-entity element type.
             </summary>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalSqlQuery.#ctor(System.String,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalSqlQuery.#ctor(System.String,System.Nullable{System.Boolean},System.Object[])">
             <summary>
             Initializes a new instance of the <see cref="T:System.Data.Entity.Internal.InternalSqlQuery"/> class.
             </summary>
@@ -92548,14 +92537,13 @@
             </summary>
             <value> The parameters. </value>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalSqlNonSetQuery.#ctor(System.Data.Entity.Internal.InternalContext,System.Type,System.String,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalSqlNonSetQuery.#ctor(System.Data.Entity.Internal.InternalContext,System.Type,System.String,System.Object[])">
             <summary>
             Initializes a new instance of the <see cref="T:System.Data.Entity.Internal.InternalSqlNonSetQuery"/> class.
             </summary>
             <param name="internalContext"> The internal context. </param>
             <param name="elementType"> Type of the element. </param>
             <param name="sql"> The SQL. </param>
-            <param name="streaming"> Whether the query is streaming or buffering. </param>
             <param name="parameters"> The parameters. </param>
         </member>
         <member name="M:System.Data.Entity.Internal.InternalSqlNonSetQuery.AsNoTracking">
@@ -92579,7 +92567,7 @@
             Represents a raw SQL query against the context for entities in an entity set.
             </summary>
         </member>
-        <member name="M:System.Data.Entity.Internal.InternalSqlSetQuery.#ctor(System.Data.Entity.Internal.Linq.IInternalSet,System.String,System.Boolean,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.InternalSqlSetQuery.#ctor(System.Data.Entity.Internal.Linq.IInternalSet,System.String,System.Boolean,System.Object[])">
             <summary>
             Initializes a new instance of the <see cref="T:System.Data.Entity.Internal.InternalSqlSetQuery"/> class.
             </summary>
@@ -92588,7 +92576,6 @@
             <param name="isNoTracking">
             If set to <c>true</c> then the entities will not be tracked.
             </param>
-            <param name="streaming"> Whether the query is streaming or buffering. </param>
             <param name="parameters"> The parameters. </param>
         </member>
         <member name="M:System.Data.Entity.Internal.InternalSqlSetQuery.AsNoTracking">
@@ -92721,7 +92708,7 @@
             internal context and will be disposed when the internal context is disposed.
             </summary>
         </member>
-        <member name="M:System.Data.Entity.Internal.LazyInternalContext.#ctor(System.Data.Entity.DbContext,System.Data.Entity.Internal.IInternalConnection,System.Data.Entity.Infrastructure.DbCompiledModel,System.Func{System.Data.Entity.DbContext,System.Data.Entity.Infrastructure.IDbModelCacheKey},System.Data.Entity.ModelConfiguration.Utilities.AttributeProvider,System.Lazy{System.Data.Entity.Infrastructure.Interception.DbDispatchers})">
+        <member name="M:System.Data.Entity.Internal.LazyInternalContext.#ctor(System.Data.Entity.DbContext,System.Data.Entity.Internal.IInternalConnection,System.Data.Entity.Infrastructure.DbCompiledModel,System.Func{System.Data.Entity.DbContext,System.Data.Entity.Infrastructure.IDbModelCacheKey},System.Data.Entity.ModelConfiguration.Utilities.AttributeProvider,System.Lazy{System.Data.Entity.Infrastructure.Interception.DbDispatchers},System.Data.Entity.Core.Objects.ObjectContext)">
             <summary>
             Constructs a <see cref="T:System.Data.Entity.Internal.LazyInternalContext"/> for the given <see cref="T:System.Data.Entity.DbContext"/> owner that will be initialized
             on first use.
@@ -93355,7 +93342,7 @@
             for the set is not mapped.
             </summary>
         </member>
-        <member name="M:System.Data.Entity.Internal.Linq.InternalSet`1.CreateObjectQuery(System.Boolean,System.Boolean)">
+        <member name="M:System.Data.Entity.Internal.Linq.InternalSet`1.CreateObjectQuery(System.Boolean,System.Nullable{System.Boolean})">
             <summary>
             Creates an underlying <see cref="T:System.Data.Entity.Core.Objects.ObjectQuery`1"/> for this set.
             </summary>
@@ -93390,7 +93377,7 @@
             </summary>
             <returns> A new query with AsStreaming applied. </returns>
         </member>
-        <member name="M:System.Data.Entity.Internal.Linq.InternalSet`1.ExecuteSqlQuery(System.String,System.Boolean,System.Boolean,System.Object[])">
+        <member name="M:System.Data.Entity.Internal.Linq.InternalSet`1.ExecuteSqlQuery(System.String,System.Boolean,System.Nullable{System.Boolean},System.Object[])">
             <summary>
             Returns an <see cref="T:System.Collections.IEnumerator"/> which when enumerated will execute the given SQL query against the database
             materializing entities into the entity set that backs this set.
