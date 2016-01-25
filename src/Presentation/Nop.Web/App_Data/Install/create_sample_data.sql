@@ -121,6 +121,8 @@ INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [L
 INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [LanguageId]) VALUES (78, 1, N'NewsItem', N'about-nopcommerce', 1, 1)
 INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [LanguageId]) VALUES (79, 2, N'NewsItem', N'nopcommerce-new-release', 1, 1)
 INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [LanguageId]) VALUES (80, 3, N'NewsItem', N'new-online-store-is-open', 1, 1)
+INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [LanguageId]) VALUES (81, 1, N'Vendor', N'vendor-1', 1, 0)
+INSERT [dbo].[UrlRecord] ([Id], [EntityId], [EntityName], [Slug], [IsActive], [LanguageId]) VALUES (82, 2, N'Vendor', N'vendor-2', 1, 0)
 SET IDENTITY_INSERT [dbo].[UrlRecord] OFF
 GO
 
