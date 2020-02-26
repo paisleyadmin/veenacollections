@@ -3,7 +3,7 @@
     /// <summary>
     /// Represents default values related to orders services
     /// </summary>
-    public static partial class NopNewsCachingDefaults
+    public static partial class NopOrderCachingDefaults
     {
         #region Checkout attributes
 
@@ -73,5 +73,35 @@
         public static string ShoppingCartPrefixCacheKey => "Nop.shoppingcart";
 
         #endregion
+
+        #region Return requests
+
+        /// <summary>
+        /// Gets a key for caching
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        public static string ReturnRequestReasonAllCacheKey => "Nop.returnrequestreason.all";
+
+        /// <summary>
+        /// Gets a key pattern to clear cache
+        /// </summary>
+        public static string ReturnRequestReasonPrefixCacheKey => "Nop.returnrequestreason.";
+
+        /// <summary>
+        /// Gets a key for caching
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        public static string ReturnRequestActionAllCacheKey => "Nop.returnrequestactions.all";
+
+        /// <summary>
+        /// Gets a key pattern to clear cache
+        /// </summary>
+        public static string ReturnRequestActionPrefixCacheKey => "Nop.returnrequestactions.";
+
+        #endregion
+
+
     }
 }
