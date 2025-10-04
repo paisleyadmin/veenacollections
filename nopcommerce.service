@@ -1,0 +1,23 @@
+[Unit]
+Description=nopCommerce ASP.NET Core Application
+After=network.target
+StartLimitBurst=5
+StartLimitIntervalSec=10
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+KillMode=mixed
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/nopcommerce
+ExecStart=/usr/local/dotnet/dotnet Nop.Web.dll --urls=http://10.0.0.35:5000
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_BUNDLE_EXTRACT_BASE_DIR=/tmp
+Environment=ASPNETCORE_URLS=http://10.0.0.35:5000
+SyslogIdentifier=nopcommerce
+
+[Install]
+WantedBy=multi-user.target
