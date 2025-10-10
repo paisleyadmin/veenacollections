@@ -13,10 +13,9 @@ KillMode=mixed
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/var/www/nopcommerce
-ExecStart=/usr/local/dotnet/dotnet Nop.Web.dll --urls=http://10.0.0.35:5000
+ExecStart=/usr/local/dotnet/dotnet Nop.Web.dll
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=DOTNET_BUNDLE_EXTRACT_BASE_DIR=/tmp
-Environment=ASPNETCORE_URLS=http://10.0.0.35:5000
 SyslogIdentifier=nopcommerce
 
 [Install]
