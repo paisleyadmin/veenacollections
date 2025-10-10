@@ -41,7 +41,7 @@ print_error() {
 
 # Function to execute commands on remote server
 ssh_exec() {
-    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" "$1"
+    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/dotnet; $1"
 }
 
 # Function to copy files to remote server
@@ -57,7 +57,7 @@ if [ ! -d "$PUBLISH_DIR" ]; then
 fi
 
 # Find the latest deployment archive
-DEPLOYMENT_ARCHIVE=$(find "$PROJECT_DIR" -name "nopcommerce-deployment-*.tar.gz" | head -n 1)
+DEPLOYMENT_ARCHIVE=$(find "$PROJECT_DIR" -name "nopcommerce-deployment-*.tar.gz" | sort -r | head -n 1)
 if [ -z "$DEPLOYMENT_ARCHIVE" ]; then
     print_error "Deployment archive not found. Please run ./01-prepare-local.sh first."
     exit 1
@@ -120,18 +120,26 @@ sudo chown -R www-data:www-data /var/www/nopcommerce/ || sudo chown -R nginx:ngi
 rm $(basename $DEPLOYMENT_ARCHIVE)
 "
 
-# Get MySQL credentials and update configuration
-print_status "Updating database configuration..."
-ssh_exec "
-if [ -f /root/nopcommerce/mysql-credentials.txt ]; then
-    MYSQL_PASSWORD=\$(grep 'nopCommerce DB Password:' /root/nopcommerce/mysql-credentials.txt | cut -d' ' -f4)
-    
-    # Update connection string in appsettings.json
-    sudo sed -i \"s/Password=noppass/Password=\$MYSQL_PASSWORD/g\" /var/www/nopcommerce/App_Data/appsettings.json
-    echo 'Database configuration updated'
+# Copy plugins configuration and update database connection
+print_status "Copying plugins configuration from local machine..."
+if [ -f "$PROJECT_DIR/src/Presentation/Nop.Web/App_Data/plugins.json" ]; then
+    scp_copy "$PROJECT_DIR/src/Presentation/Nop.Web/App_Data/plugins.json" "/tmp/plugins.json"
+    ssh_exec "
+    sudo cp /tmp/plugins.json /var/www/nopcommerce/App_Data/plugins.json
+    sudo chown www-data:www-data /var/www/nopcommerce/App_Data/plugins.json || sudo chown nginx:nginx /var/www/nopcommerce/App_Data/plugins.json
+    rm /tmp/plugins.json
+    echo 'Plugins configuration copied successfully'
+    "
 else
-    echo 'Warning: MySQL credentials file not found. Using default password.'
+    print_warning "plugins.json not found locally, installation wizard may appear"
 fi
+
+print_status "Configuring database connection to bypass installation wizard..."
+ssh_exec "
+echo 'Updating appsettings.json with database connection...'
+sudo sed -i 's/\"ConnectionString\": \"\"/\"ConnectionString\": \"Server=localhost;User ID=root;Password=Veen@;Database=veena;Allow User Variables=True;Use XA Transactions=False\"/g' /var/www/nopcommerce/App_Data/appsettings.json
+sudo sed -i 's/\"DataProvider\": \"sqlserver\"/\"DataProvider\": \"mysql\"/g' /var/www/nopcommerce/App_Data/appsettings.json
+echo 'Database connection configured for veena database'
 "
 
 # Install systemd service

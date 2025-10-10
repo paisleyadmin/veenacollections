@@ -1,0 +1,8 @@
+{
+  "runtimeOptions": {
+    "additionalProbingPaths": [
+      "/Users/majunu/.dotnet/store/|arch|/|tfm|",
+      "/Users/majunu/.nuget/packages"
+    ]
+  }
+}

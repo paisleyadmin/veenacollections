@@ -2,7 +2,11 @@
 
 # ============================================================================
 # nopCommerce Local Deployment Preparation Script
-# ============================================================================
+# ===========================================# Set environment variables
+export ASPNETCORE_ENVIRONMENT=Production
+export ASPNETCORE_URLS="http://10.0.0.35:5000"
+
+# Start the application============================
 # This script prepares the nopCommerce application for deployment to Linux VM
 # Run this script on your local macOS machine before deploying to the server
 # ============================================================================
@@ -93,8 +97,8 @@ print_status "Creating production configuration..."
 cat > "$PUBLISH_DIR/App_Data/appsettings.json" << 'EOF'
 {
   "ConnectionStrings": {
-    "ConnectionString": "Server=localhost;User ID=nopuser;Password=noppass;Database=nopcommerce_prod;Allow User Variables=True;Use XA Transactions=False",
-    "DataProvider": "mysql",
+    "ConnectionString": "",
+    "DataProvider": "sqlserver",
     "SQLCommandTimeout": null,
     "WithNoLock": false,
     "Collation": null,
@@ -187,7 +191,7 @@ cd /var/www/nopcommerce
 
 # Set environment variables
 export ASPNETCORE_ENVIRONMENT=Production
-export ASPNETCORE_URLS="http://10.0.0.2:5000"
+export ASPNETCORE_URLS="http://localhost:5000"
 
 # Start the application
 exec dotnet Nop.Web.dll
@@ -209,9 +213,9 @@ Restart=always
 RestartSec=1
 User=www-data
 WorkingDirectory=/var/www/nopcommerce
-ExecStart=/usr/bin/dotnet /var/www/nopcommerce/Nop.Web.dll
+ExecStart=/usr/local/dotnet/dotnet /var/www/nopcommerce/Nop.Web.dll
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://10.0.0.2:5000
+Environment=ASPNETCORE_URLS=http://10.0.0.35:5000
 SyslogIdentifier=nopcommerce
 KillSignal=SIGTERM
 TimeoutStopSec=30
@@ -257,7 +261,7 @@ server {
     
     # Proxy to ASP.NET Core
     location / {
-        proxy_pass http://10.0.0.2:5000;
+        proxy_pass http://10.0.0.35:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection keep-alive;

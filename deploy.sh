@@ -69,7 +69,7 @@ case $choice in
         ./deployment/01-prepare-local.sh
         
         print_status "Step 2/3: Setting up server..."
-        ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" 'bash -s' < deployment/02-setup-server.sh
+        ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; bash -s' < deployment/02-setup-server.sh
         
         print_status "Step 3/3: Deploying application..."
         ./deployment/03-deploy-application.sh
@@ -91,7 +91,7 @@ case $choice in
         
     3)
         print_status "Setting up server only..."
-        ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" 'bash -s' < deployment/02-setup-server.sh
+        ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; bash -s' < deployment/02-setup-server.sh
         print_status "Server setup completed!"
         ;;
         
@@ -121,6 +121,7 @@ case $choice in
         
         # Check services
         ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$SERVER_IP" "
+            export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
             echo '=== Service Status ==='
             if systemctl is-active --quiet nopcommerce; then
                 echo -e '• nopCommerce Service: \033[0;32m✓ Running\033[0m'
@@ -165,9 +166,9 @@ echo -e "• Application URL: ${BLUE}http://$SERVER_IP${NC}"
 echo -e "• SSH Access: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP${NC}"
 echo ""
 echo -e "${GREEN}Quick Commands:${NC}"
-echo -e "• Check status: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'sudo nopcommerce-maintenance status'${NC}"
-echo -e "• View logs: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'sudo nopcommerce-maintenance logs'${NC}"
-echo -e "• Restart app: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'sudo nopcommerce-maintenance restart'${NC}"
+echo -e "• Check status: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; sudo nopcommerce-maintenance status'${NC}"
+echo -e "• View logs: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; sudo nopcommerce-maintenance logs'${NC}"
+echo -e "• Restart app: ${BLUE}ssh -i $SSH_KEY $SSH_USER@$SERVER_IP 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; sudo nopcommerce-maintenance restart'${NC}"
 echo -e "${BLUE}============================================================================${NC}"
 
 # Try to open browser (macOS)

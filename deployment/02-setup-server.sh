@@ -95,7 +95,9 @@ $SUDO mkdir -p /usr/local/dotnet
 
 # Use Microsoft's official install script which handles multiple architectures
 print_status "Downloading and running Microsoft .NET installer..."
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime aspnetcore --install-dir $HOME/.dotnet
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --runtime aspnetcore --install-dir $HOME/.dotnet 2>/dev/null || {
+    print_warning "Microsoft installer failed, will try alternative methods"
+}
 
 # Move from user directory to system directory
 if [ -d "$HOME/.dotnet" ]; then
@@ -115,52 +117,87 @@ echo 'export PATH=$PATH:/usr/local/dotnet' | $SUDO tee -a /etc/environment
 export DOTNET_ROOT=/usr/local/dotnet
 export PATH=$PATH:/usr/local/dotnet
 
-# If the above fails, fallback to package manager with .NET 8.0
-if ! /usr/local/bin/dotnet --version >/dev/null 2>&1; then
-    print_warning ".NET 9.0 installation failed, trying package manager with .NET 8.0..."
+# Check if .NET is working properly (either from custom install or system install)
+DOTNET_WORKING=false
+
+# Try the custom installation first
+if [ -f "/usr/local/dotnet/dotnet" ] && /usr/local/dotnet/dotnet --list-runtimes >/dev/null 2>&1; then
+    print_status ".NET 9.0 custom installation is working"
+    DOTNET_WORKING=true
+# Try system-installed dotnet
+elif command -v dotnet >/dev/null 2>&1 && dotnet --list-runtimes >/dev/null 2>&1; then
+    print_status "System .NET installation is working"
+    DOTNET_WORKING=true
+fi
+
+# If .NET is not working, try package manager installation
+if [ "$DOTNET_WORKING" = false ]; then
+    print_warning ".NET installation not working properly, trying package manager..."
     
     case $DISTRO in
         "ubuntu"|"debian")
-            # Add Microsoft package repository
-            curl -sSL https://packages.microsoft.com/keys/microsoft.asc | $SUDO gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
-            
-            if [ "$DISTRO" = "ubuntu" ]; then
-                echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/repos/microsoft-ubuntu-jammy-prod jammy main" | $SUDO tee /etc/apt/sources.list.d/microsoft-prod.list
+            # Only add Microsoft repository if it doesn't exist
+            if [ ! -f /usr/share/keyrings/microsoft-prod.gpg ]; then
+                curl -sSL https://packages.microsoft.com/keys/microsoft.asc | $SUDO gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
             fi
             
-            $SUDO apt update
+            if [ "$DISTRO" = "ubuntu" ] && [ ! -f /etc/apt/sources.list.d/microsoft-prod.list ]; then
+                echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/repos/microsoft-ubuntu-jammy-prod jammy main" | $SUDO tee /etc/apt/sources.list.d/microsoft-prod.list
+                $SUDO apt update
+            fi
+            
             # Try .NET 8.0, fallback to 6.0 if needed
             $INSTALL_CMD aspnetcore-runtime-8.0 dotnet-runtime-8.0 || {
                 print_warning ".NET 8.0 not available, trying .NET 6.0..."
-                $INSTALL_CMD aspnetcore-runtime-6.0 dotnet-runtime-6.0
+                $INSTALL_CMD aspnetcore-runtime-6.0 dotnet-runtime-6.0 || true
             }
             ;;
         
         "centos"|"rhel"|"ol")
-            # Add Microsoft repository
-            $SUDO rpm -Uvh https://packages.microsoft.com/config/centos/8/packages-microsoft-prod.rpm || true
+            # Add Microsoft repository if not present
+            if [ ! -f /etc/yum.repos.d/microsoft-prod.repo ]; then
+                $SUDO rpm -Uvh https://packages.microsoft.com/config/centos/8/packages-microsoft-prod.rpm || true
+            fi
             
             if command -v dnf &> /dev/null; then
-                $SUDO dnf install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0
+                $SUDO dnf install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0 || true
             else
-                $SUDO yum install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0
+                $SUDO yum install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0 || true
             fi
             ;;
         
         "fedora")
-            $SUDO rpm -Uvh https://packages.microsoft.com/config/fedora/37/packages-microsoft-prod.rpm || true
-            $SUDO dnf install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0
+            if [ ! -f /etc/yum.repos.d/microsoft-prod.repo ]; then
+                $SUDO rpm -Uvh https://packages.microsoft.com/config/fedora/37/packages-microsoft-prod.rpm || true
+            fi
+            $SUDO dnf install -y aspnetcore-runtime-8.0 dotnet-runtime-8.0 || true
             ;;
     esac
 fi
 
-# Verify .NET installation
+# Final verification of .NET installation
 print_status "Verifying .NET installation..."
-if command -v dotnet &> /dev/null; then
-    DOTNET_VERSION=$(dotnet --version)
-    print_status ".NET version installed: $DOTNET_VERSION"
+
+# Check custom installation first
+if [ -f "/usr/local/dotnet/dotnet" ]; then
+    DOTNET_CMD="/usr/local/dotnet/dotnet"
+    export DOTNET_ROOT=/usr/local/dotnet
+    export PATH=$PATH:/usr/local/dotnet
+elif command -v dotnet &> /dev/null; then
+    DOTNET_CMD="dotnet"
 else
-    print_error ".NET installation failed"
+    print_error "No .NET installation found"
+    exit 1
+fi
+
+# Test .NET functionality
+if $DOTNET_CMD --list-runtimes >/dev/null 2>&1; then
+    DOTNET_RUNTIMES=$($DOTNET_CMD --list-runtimes)
+    print_status ".NET installation verified successfully"
+    echo "Available runtimes:"
+    echo "$DOTNET_RUNTIMES"
+else
+    print_error ".NET installation is not functional"
     exit 1
 fi
 
@@ -181,47 +218,46 @@ esac
 
 # Start and enable MySQL
 print_status "Starting and enabling MySQL service..."
-$SUDO systemctl start mysqld || $SUDO systemctl start mysql
-$SUDO systemctl enable mysqld || $SUDO systemctl enable mysql
+if systemctl list-unit-files | grep -q "mysql.service"; then
+    $SUDO systemctl start mysql
+    $SUDO systemctl enable mysql
+elif systemctl list-unit-files | grep -q "mysqld.service"; then
+    $SUDO systemctl start mysqld
+    $SUDO systemctl enable mysqld
+else
+    print_error "MySQL service not found"
+    exit 1
+fi
 
-# Secure MySQL installation and setup
-print_status "Setting up MySQL database and user..."
+# Verify MySQL installation and basic setup
+print_status "Verifying MySQL installation..."
 
-# Generate a strong password for MySQL
-MYSQL_ROOT_PASSWORD=$(openssl rand -base64 32)
-MYSQL_NOP_PASSWORD=$(openssl rand -base64 32)
+# Test MySQL connectivity
+if $SUDO mysql -e "SELECT VERSION();" >/dev/null 2>&1; then
+    print_status "MySQL is accessible and working"
+    MYSQL_VERSION=$($SUDO mysql -e "SELECT VERSION();" -s -N)
+    print_status "MySQL version: $MYSQL_VERSION"
+else
+    print_warning "MySQL requires additional configuration or password setup"
+    print_status "You may need to run mysql_secure_installation manually"
+fi
 
-# Save passwords to a secure file
-$SUDO mkdir -p /root/nopcommerce
-$SUDO cat > /root/nopcommerce/mysql-credentials.txt << EOF
-MySQL Root Password: $MYSQL_ROOT_PASSWORD
-nopCommerce DB User: nopuser
-nopCommerce DB Password: $MYSQL_NOP_PASSWORD
-nopCommerce Database: nopcommerce_prod
-EOF
-
-$SUDO chmod 600 /root/nopcommerce/mysql-credentials.txt
-
-# Setup MySQL root password and create nopCommerce database
-print_status "Configuring MySQL..."
-
-# For systems that don't set a root password by default
-$SUDO mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';" 2>/dev/null || {
-    # If the above fails, try without password first
-    $SUDO mysql << EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
-FLUSH PRIVILEGES;
-EOF
+# Create nopcommerce database if it doesn't exist (using configured credentials)
+print_status "Ensuring nopcommerce database exists..."
+$SUDO mysql -e "CREATE DATABASE IF NOT EXISTS nopcommerce CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || {
+    print_status "Database creation skipped (may already exist or require manual setup)"
 }
 
-# Create nopCommerce database and user
-print_status "Creating nopCommerce database and user..."
-$SUDO mysql -u root -p"$MYSQL_ROOT_PASSWORD" << EOF
-CREATE DATABASE IF NOT EXISTS nopcommerce_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'nopuser'@'localhost' IDENTIFIED BY '$MYSQL_NOP_PASSWORD';
-GRANT ALL PRIVILEGES ON nopcommerce_prod.* TO 'nopuser'@'localhost';
-FLUSH PRIVILEGES;
+# Save database info for reference
+$SUDO mkdir -p /root/nopcommerce
+$SUDO tee /root/nopcommerce/database-info.txt > /dev/null << EOF
+Database Name: nopcommerce
+Database User: nopuser
+Database Password: NopProd2024
+Note: Database credentials are configured in appsettings.json
 EOF
+
+$SUDO chmod 600 /root/nopcommerce/database-info.txt
 
 # Install Nginx
 print_status "Installing Nginx..."
@@ -268,7 +304,7 @@ fi
 print_status "Installing additional system tools..."
 case $DISTRO in
     "ubuntu"|"debian")
-        $INSTALL_CMD htop iotop netstat-ss tree vim nano
+        $INSTALL_CMD htop iotop net-tools tree vim nano
         ;;
     "centos"|"rhel"|"ol"|"fedora")
         if command -v dnf &> /dev/null; then
@@ -281,7 +317,7 @@ esac
 
 # Create maintenance script
 print_status "Creating maintenance script..."
-$SUDO cat > /usr/local/bin/nopcommerce-maintenance << 'EOF'
+$SUDO tee /usr/local/bin/nopcommerce-maintenance > /dev/null << 'EOF'
 #!/bin/bash
 
 # nopCommerce Maintenance Script
@@ -335,7 +371,7 @@ $SUDO chmod +x /usr/local/bin/nopcommerce-maintenance
 
 # Create log rotation configuration
 print_status "Setting up log rotation..."
-$SUDO cat > /etc/logrotate.d/nopcommerce << 'EOF'
+$SUDO tee /etc/logrotate.d/nopcommerce > /dev/null << 'EOF'
 /var/www/nopcommerce/Logs/*.log {
     daily
     missingok
@@ -362,12 +398,12 @@ echo -e "• Firewall: ${GREEN}✓${NC} Configured (ports 80, 443, 5000)"
 echo -e "• Maintenance tools: ${GREEN}✓${NC} Installed"
 echo ""
 echo -e "${YELLOW}Important Information:${NC}"
-echo -e "• MySQL credentials saved to: ${BLUE}/root/nopcommerce/mysql-credentials.txt${NC}"
+echo -e "• Database info saved to: ${BLUE}/root/nopcommerce/database-info.txt${NC}"
 echo -e "• Maintenance script: ${BLUE}/usr/local/bin/nopcommerce-maintenance${NC}"
 echo -e "• Application directory: ${BLUE}/var/www/nopcommerce${NC}"
 echo ""
 echo -e "${GREEN}Next Steps:${NC}"
-echo -e "1. Update the MySQL connection string with the generated password"
-echo -e "2. Deploy the nopCommerce application files"
-echo -e "3. Configure SSL certificate (recommended for production)"
+echo -e "1. Deploy the nopCommerce application files"
+echo -e "2. Configure SSL certificate (recommended for production)"
+echo -e "3. Set up regular database backups"
 echo -e "${BLUE}============================================================================${NC}"

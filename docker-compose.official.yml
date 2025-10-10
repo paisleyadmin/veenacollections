@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  nopcommerce_web:
+    image: nopcommerceteam/nopcommerce:latest
+    container_name: nopcommerce_official
+    ports:
+      - "80:80"
+    depends_on:
+      - nopcommerce_database
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - nopcommerce_data:/app/App_Data
+      - nopcommerce_plugins:/app/Plugins
+      - nopcommerce_themes:/app/Themes
+
+  nopcommerce_database:
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    container_name: nopcommerce_mssql_server
+    environment:
+      SA_PASSWORD: "nopCommerce_db_password"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
+    volumes:
+      - nopcommerce_db_data:/var/opt/mssql
+    ports:
+      - "1433:1433"
+
+volumes:
+  nopcommerce_data:
+  nopcommerce_db_data:
+  nopcommerce_plugins:
+  nopcommerce_themes:
