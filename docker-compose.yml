@@ -8,6 +8,7 @@ services:
       - nopcommerce_database
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:80
     volumes:
       - nopcommerce_data:/app/App_Data
       - nopcommerce_logs:/app/logs
