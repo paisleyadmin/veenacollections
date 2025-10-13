@@ -43,8 +43,9 @@ If you want to deploy immediately, follow these steps:
    ```
 
 5. **Access your application:**
-   - Open browser to: `http://129.146.167.43`
-   - Complete the nopCommerce installation wizard
+   - Primary URL: `https://theveenacollections.com`
+   - Direct backend (for diagnostics without TLS): `http://129.146.167.43:5000`
+   - Complete the nopCommerce installation wizard if this is the first run
 
 ## Detailed Step-by-Step Instructions
 
@@ -297,19 +298,55 @@ htop
 sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
 ```
 
-### SSL Certificate Setup (Production)
+### HTTPS Reverse Proxy Setup (Nginx + Certbot)
 
-For production, set up SSL using Let's Encrypt:
+1. **Upload the curated nginx site definition and enable it**
+   ```bash
+   scp -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key \
+       deployment/nginx/nopcommerce.conf \
+       ubuntu@129.146.167.43:/tmp/
 
-```bash
-# Install Certbot
-sudo apt install certbot python3-certbot-nginx
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 <<'EOF'
+   /usr/bin/sudo /bin/mv /tmp/nopcommerce.conf /etc/nginx/sites-available/nopcommerce.conf
+   /usr/bin/sudo /bin/mkdir -p /var/www/letsencrypt
+   /usr/bin/sudo /bin/chown -R www-data:www-data /var/www/letsencrypt
+   /usr/bin/sudo /bin/ln -sf /etc/nginx/sites-available/nopcommerce.conf /etc/nginx/sites-enabled/nopcommerce.conf
+   /usr/bin/sudo /bin/rm -f /etc/nginx/sites-enabled/default
+   /usr/bin/sudo /usr/sbin/nginx -t
+   /usr/bin/sudo /usr/bin/systemctl reload nginx
+   EOF
+   ```
+   The virtual host listens on port 80/443 and proxies to the Kestrel listener on `http://127.0.0.1:5000`.
 
-# Get SSL certificate (replace with your domain)
-sudo certbot --nginx -d yourdomain.com
+2. **Install Certbot via snap (recommended by Let’s Encrypt)**
+   ```bash
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 <<'EOF'
+   /usr/bin/sudo /usr/bin/snap install core
+   /usr/bin/sudo /usr/bin/snap refresh core
+   /usr/bin/sudo /usr/bin/snap install --classic certbot
+   /usr/bin/sudo /bin/ln -sf /snap/bin/certbot /usr/bin/certbot
+   EOF
+   ```
 
-# Auto-renewal is set up automatically
-```
+3. **Request certificates and enable HTTP→HTTPS redirects**
+   ```bash
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     '/usr/bin/sudo /usr/bin/certbot --nginx \
+        -d theveenacollections.com -d www.theveenacollections.com \
+        --non-interactive --agree-tos -m majunu@paisleytech.com --redirect'
+   ```
+
+4. **Validation**
+   ```bash
+   # From the server (hairpin-safe)
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     '/usr/bin/curl -I --resolve theveenacollections.com:443:127.0.0.1 https://theveenacollections.com'
+
+   # From your workstation (requires corporate proxy to allow the domain)
+   curl -I https://theveenacollections.com
+   ```
+
+Certbot installs a systemd timer that renews the certificates automatically; no extra cron work is necessary.
 
 ### Backup Strategy
 

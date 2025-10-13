@@ -53,8 +53,8 @@ services:
     restart: unless-stopped
     network_mode: "host"  # Use host networking to access MySQL
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:80
+    - ASPNETCORE_ENVIRONMENT=Production
+    - ASPNETCORE_URLS=http://+:5000
     volumes:
       # Persistent data - survives deployments
       - nopcommerce_app_data:/app/App_Data
@@ -64,7 +64,7 @@ services:
       - nopcommerce_wwwroot_files:/app/wwwroot/files
       - nopcommerce_logs:/app/logs
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -H 'Host: 129.146.167.43' http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -H 'Host: theveenacollections.com' http://localhost:5000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -94,14 +94,17 @@ EOF
     print_info "Configuring MySQL for container access..."
     run_remote "
         # Stop any conflicting services first
-        sudo systemctl stop apache2 || true
-        sudo systemctl stop nginx || true
-        sudo systemctl disable apache2 || true
-        sudo systemctl disable nginx || true
-        
-        # Kill any process using port 80
-        sudo fuser -k 80/tcp || true
-        sleep 3
+  sudo systemctl stop apache2 || true
+  sudo systemctl disable apache2 || true
+  sleep 1
+
+    # Ensure iptables permits HTTPS traffic
+    if ! sudo iptables -C INPUT -p tcp --dport 443 -j ACCEPT 2>/dev/null; then
+      sudo iptables -I INPUT 5 -p tcp --dport 443 -j ACCEPT
+      if command -v netfilter-persistent >/dev/null 2>&1; then
+        sudo netfilter-persistent save
+      fi
+    fi
         
         # Ensure MySQL is running and configured
         sudo systemctl start mysql
@@ -164,20 +167,20 @@ EOF
         docker ps
         
         echo
-        echo 'Checking application health:'
-        curl -I http://localhost:80 || echo 'Application may still be starting...'
+  echo 'Checking application health:'
+  curl -I http://localhost:5000 || echo 'Application may still be starting...'
     "
     
     # Health check
     print_info "Testing deployment..."
     sleep 15
     
-    if curl -I "http://$OCI_IP" 2>/dev/null | head -1 | grep -q "HTTP"; then
+  if run_remote "curl -sf -o /dev/null --max-time 10 http://localhost:5000"; then
         print_status "🎉 SUCCESS! nopCommerce is running with host networking!"
         
         print_header "📋 Updated Installation Information"
         echo
-        print_info "🌐 Application URL: http://$OCI_IP"
+    print_info "🌐 Application URL (direct): http://$OCI_IP:5000 (open internally; OCI firewall still blocks external access)"
         print_info "🔧 Installation wizard database details:"
         echo
         print_status "📝 USE THESE DATABASE CONNECTION DETAILS:"
