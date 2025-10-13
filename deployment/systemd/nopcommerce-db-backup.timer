@@ -1,0 +1,10 @@
+[Unit]
+Description=Run nopCommerce MySQL backup weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=30m
+
+[Install]
+WantedBy=timers.target

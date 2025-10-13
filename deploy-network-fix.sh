@@ -22,7 +22,23 @@ run_remote() {
     ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_USER@$OCI_IP" "export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && $1"
 }
 
+run_diagnostics() {
+    print_header "🔍 Running Pre-Deployment Diagnostics"
+    run_remote "
+        echo '--- Docker PS ---'
+        docker ps -a
+        echo
+        echo '--- Processes on Port 80 ---'
+        sudo ss -tlnp | grep ':80' || echo 'No processes found on port 80'
+        echo
+        echo '--- Last 15 NopCommerce Logs ---'
+        docker logs nopcommerce --tail 15 2>/dev/null || echo 'Could not retrieve nopcommerce logs.'
+    "
+    print_header "======================================="
+}
+
 deploy_network_fix() {
+    run_diagnostics
     print_header "🔧 Network-Fixed nopCommerce Deployment"
     print_header "======================================="
     
@@ -48,7 +64,7 @@ services:
       - nopcommerce_wwwroot_files:/app/wwwroot/files
       - nopcommerce_logs:/app/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/", "||", "exit", "1"]
+      test: ["CMD-SHELL", "curl -fsS -H 'Host: 129.146.167.43' http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -108,6 +124,19 @@ EOF
         mysql -u nopcommerce_user -p'nopCommerce_secure_2024' -h localhost -e 'SELECT \"Connection successful\" as Status;' 2>/dev/null && echo 'Database connection: SUCCESS' || echo 'Database connection: FAILED'
     "
     
+    # Transfer source code for fresh build
+    print_info "Transferring source code..."
+    
+    # Create a clean source archive
+    tar --exclude='.git' --exclude='bin' --exclude='obj' --exclude='node_modules' -czf /tmp/nopcommerce-src.tar.gz ./src ./Dockerfile
+    
+    # Transfer and extract
+    scp -i "$SSH_KEY" -o StrictHostKeyChecking=no /tmp/nopcommerce-src.tar.gz $SSH_USER@$OCI_IP:/tmp/
+    run_remote "cd /home/ubuntu && rm -rf src Dockerfile && tar -xzf /tmp/nopcommerce-src.tar.gz && rm /tmp/nopcommerce-src.tar.gz"
+    
+    # Clean up local temp file
+    rm -f /tmp/nopcommerce-src.tar.gz
+
     # Deploy the application with host networking
     print_info "Deploying nopCommerce with host networking..."
     run_remote "
@@ -118,6 +147,12 @@ EOF
         docker-compose -f docker-compose.persistent.yml down 2>/dev/null || true
         docker stop nopcommerce mysql_checker 2>/dev/null || true
         docker rm nopcommerce mysql_checker 2>/dev/null || true
+        
+        # Remove old image to force fresh build
+        docker rmi nopcommerce:latest 2>/dev/null || true
+        
+        # Build fresh image with latest source code
+        docker build --no-cache -t nopcommerce:latest .
         
         # Start with network-fixed configuration
         docker-compose -f docker-compose.network-fixed.yml up -d

@@ -313,17 +313,85 @@ sudo certbot --nginx -d yourdomain.com
 
 ### Backup Strategy
 
-#### 1. Database Backups
-```bash
-# Manual backup
-sudo nopcommerce-maintenance backup-db
+#### 1. Google Drive Database Backups (Service Account)
+`deployment/nopcommerce-db-backup.sh` now dumps the MySQL database, gzips it, stores the archive under `/home/ubuntu/nopcommerce-db-backups`, and synchronises it to Google Drive via `rclone` using a Workspace service account. The script keeps only the three most recent dumps both locally and remotely.
 
-# Set up automated backups (crontab)
-sudo crontab -e
-# Add: 0 2 * * * /usr/local/bin/nopcommerce-maintenance backup-db
+1. **Upload the service-account JSON to the server:**
+   ```bash
+   scp -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key \
+       ~/Downloads/veenacollections-*.json \
+       ubuntu@129.146.167.43:/home/ubuntu/veenacollections-service-account.json
+   ```
+
+2. **Create or refresh the rclone remote:**
+   ```bash
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 <<'EOF'
+   export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+   mkdir -p ~/.config/rclone
+   rclone config delete gdrive_nopcommerce >/dev/null 2>&1 || true
+   rclone config create gdrive_nopcommerce drive \
+       service_account_file=/home/ubuntu/veenacollections-service-account.json \
+       scope=drive
+   EOF
+   ```
+   If you are targeting a Shared Drive, share it with the service-account email as **Content Manager** and then set the drive ID:
+   ```bash
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && \
+      rclone config update gdrive_nopcommerce team_drive YOUR_SHARED_DRIVE_ID'
+   ```
+
+3. **Copy the backup script to the server:**
+   ```bash
+   scp -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key \
+       deployment/nopcommerce-db-backup.sh \
+       ubuntu@129.146.167.43:/tmp/
+
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 <<'EOF'
+   mv /tmp/nopcommerce-db-backup.sh /home/ubuntu/nopcommerce-db-backup.sh
+   chmod 750 /home/ubuntu/nopcommerce-db-backup.sh
+   ln -sf /home/ubuntu/nopcommerce-db-backup.sh /home/ubuntu/.local/bin/nopcommerce-db-backup.sh
+   EOF
+   ```
+
+4. **Run a manual backup:**
+   ```bash
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:~/.local/bin && ~/nopcommerce-db-backup.sh'
+   ```
+
+5. **Verify outputs:**
+   ```bash
+   # Local archives on the server
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     'ls -1 /home/ubuntu/nopcommerce-db-backups'
+
+   # Remote copies on Google Drive
+   ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 \
+     'rclone ls gdrive_nopcommerce:nopcommerce/db'
+   ```
+
+#### 2. Automating Weekly Backups (optional)
+After you confirm manual runs, enable the provided service/timer to trigger the script every Sunday at 02:00 UTC (with a 30-minute randomised delay).
+
+```bash
+scp -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key \
+    deployment/systemd/nopcommerce-db-backup.{service,timer} \
+    ubuntu@129.146.167.43:/tmp/
+
+ssh -i /Users/majunu/PaisleyTech/OCI/ssh-key-2025-09-09.key ubuntu@129.146.167.43 <<'EOF'
+sudo mv /tmp/nopcommerce-db-backup.service /etc/systemd/system/
+sudo mv /tmp/nopcommerce-db-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now nopcommerce-db-backup.timer
+EOF
+
+sudo systemctl list-timers | grep nopcommerce-db-backup
 ```
 
-#### 2. Application Backups
+Edit `deployment/systemd/nopcommerce-db-backup.timer` if you want a different schedule.
+
+#### 3. Application Backups
 ```bash
 # Backup entire application
 sudo tar -czf /var/backups/nopcommerce-app-$(date +%Y%m%d).tar.gz -C /var/www nopcommerce

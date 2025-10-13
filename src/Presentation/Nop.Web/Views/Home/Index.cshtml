@@ -28,9 +28,9 @@
 <div class="page home-page">
     <div class="page-body">
         <!-- Development Test Banner -->
-        <div style="background-color: #28a745; color: white; padding: 10px; text-align: center; margin-bottom: 20px; border-radius: 5px;">
+        @* <div style="background-color: #28a745; color: white; padding: 10px; text-align: center; margin-bottom: 20px; border-radius: 5px;">
             🚀 <strong>Development Test:</strong> Local changes working! Updated on @DateTime.Now.ToString("yyyy-MM-dd HH:mm")
-        </div>
+        </div> *@
         @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageTop })        
         @await Component.InvokeAsync(typeof(TopicBlockViewComponent), new { systemName = "HomepageText" })
         @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeCategories })
@@ -42,8 +42,7 @@
         @await Component.InvokeAsync(typeof(HomepageBestSellersViewComponent))
         @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeNews })
         @await Component.InvokeAsync(typeof(HomepageNewsViewComponent))
-        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforePoll })
-        @await Component.InvokeAsync(typeof(HomepagePollsViewComponent))
+    @* Poll hidden per requirement *@
         @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBottom })
     </div>
 </div>

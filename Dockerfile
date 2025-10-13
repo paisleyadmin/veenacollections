@@ -35,6 +35,10 @@ RUN chmod 775 App_Data \
 # create the runtime instance 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS runtime 
 
+# Install runtime dependencies
+RUN apk add --no-cache icu-libs icu-data-full
+RUN apk add --no-cache curl
+
 # add globalization support
 RUN apk add --no-cache icu-libs icu-data-full
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false

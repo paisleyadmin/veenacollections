@@ -1,0 +1,10 @@
+[Unit]
+Description=nopCommerce MySQL backup job
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/nopcommerce-db-backup.sh
+Nice=10
